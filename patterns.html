@@ -1,0 +1,436 @@
+  <!DOCTYPE html>
+  <html>
+  <head>
+  <meta charset="utf-8">
+  <title>My JS Design Patterns</title>
+  </head>
+  <body>
+  <script>
+
+function out() {
+  console.log.apply(console, arguments);
+}
+
+// out("hello", "world", 2);
+
+// SECTION
+// THE CONSTRUCTOR PATTERN
+
+function runConstructorPattern() {
+  var newObject = {};
+  var newObject = Object.create(Object.prototype);
+  var newObject = new Object();
+
+  // SETTING PROPERTIES (KEYS AND VALUES)
+  newObject.someKey = "Hello";
+  var value = newObject.someKey;
+
+  newObject["someKey"] = "Hello";
+  var value = newObject["someKey"];
+
+  // MORE CONTROL OVER PROPERTY'S BEHAVIOR
+  Object.defineProperty(newObject, "someKey", {
+    value: "Hello",
+    writable: true,
+    enumerable: true,
+    configurable: true
+  });
+
+  // DEFINE PROPERTIES WITH DEFAULT OPTIONS
+  var defineProp = function(obj, key, value) {
+    var config = {
+      value: value,
+      writable: true,
+      enumerable: true,
+      configurable: true
+    };
+    Object.defineProperty(obj, key, config);
+  };
+
+  var person = Object.create(Object.prototype);
+
+  defineProp(person, "car", "DeLorean");
+  defineProp(person, "dateOfBirth", "1981");
+  defineProp(person, "hasBeard", false);
+
+  out(person);
+
+  Object.defineProperties(newObject, {
+    "someKey": {
+      value: "Hello",
+      writable: true
+    },
+    "anotherKey": {
+      value: "Goodbye",
+      writable: false
+    }
+  });
+
+  // SIMPLE INHERITANCE
+  // A race car driver
+  var driver = Object.create(person);
+  defineProp(driver, "topSpeed", "100 mph");
+  out(driver.dateOfBirth);
+
+  // SUBSECTION
+  // BASIC CONSTRUCTORS
+
+  // Prefixing a function call with "new" calls constructor behavior
+  // "this" references the new object being created
+
+  function Car(model, year, miles) {
+    this.model = model;
+    this.year = year;
+    this.miles = miles;
+
+    this.toString = function() {
+      return this.model + " has done " + this.miles + " miles";
+    };
+  }
+
+  var civic = new Car("Honda Civic", 2009, 20000);
+  out(civic.toString());
+
+  // PROBLEM: toString() IS REDEFINED FOR EACH OF THE NEW OBJECTS
+
+  // SUBSECTION
+  // CONSTRUCTORS WITH PROTOTYPES
+  function CarWithProto(model, year, miles) {
+    this.model = model;
+    this.year = year;
+    this.miles = miles;
+  }
+
+  CarWithProto.prototype.toString = function() {
+    return this.model + " has done " + this.miles + " miles";
+  };
+
+  var mondeo = new CarWithProto("Ford Mondeo", 2010, 5000);
+  out(mondeo.toString());
+}
+
+
+// SECTION
+// OBJECT LITERALS
+
+function runModulePattern() {
+  var variableValue = 'Hello';
+
+  var myObjectLiteral = {
+    variableKey: variableValue,
+    functionKey: function() {
+      return 0;
+    }
+  };
+
+  var myModule = {
+    myProperty: "someValue",
+
+    myConfig: {
+      useCaching: true,
+      language: 'en'
+    },
+
+    saySomething: function() {
+      out("where is Paul Irish?");
+    },
+
+    reportMyConfig: function() {
+      out("Caching is " + this.myConfig.useCaching);
+    },
+
+    updateMyConfig: function(newConfig) {
+      if (typeof newConfig === 'object') {
+        this.myConfig = newConfig;
+        out(this.myConfig.language);
+      }
+    }
+  };
+
+  myModule.reportMyConfig();
+  myModule.updateMyConfig({
+    language: 'fr',
+    useCaching: false
+  });
+  myModule.reportMyConfig();
+
+  // SUBSECTION
+  // MODULE PATTERN
+
+  var testModule = (function() {
+    var counter = 0;
+
+    return {
+      incrementCounter: function() {
+        return counter++;
+      },
+      resetCounter: function() {
+        out("counter value prior to reset: " + counter);
+        counter = 0;
+      }
+    };
+  })();
+
+  testModule.incrementCounter();
+  testModule.incrementCounter();
+  testModule.resetCounter();
+  testModule.incrementCounter();
+  testModule.resetCounter();
+
+  // NAMESPACING
+  var myNamespace = (function() {
+    var myPrivateVar, myPrivateMethod;
+    myPrivateVar = 0;
+    myPrivateMethod = function(foo) {
+      out("the private method says " + foo);
+    };
+
+    return {
+      myPublicVar: 'the public value',
+      myPublicFunction: function(bar) {
+        myPrivateVar++;
+        myPrivateMethod(bar);
+      }
+    };
+  })();
+
+  myNamespace.myPublicFunction("Hi");
+
+  var basketModule = (function() {
+    // private
+    var basket = [];
+
+    function doSomethingPrivate() {
+      
+    }
+
+    return {
+      addItem: function(values) {
+        basket.push(values);
+      },
+
+      getItemCount: function() {
+        return basket.length;
+      },
+
+      doSomething: doSomethingPrivate,
+
+      getTotal: function() {
+        var q = this.getItemCount();
+        var p = 0;
+
+        while (q--) {
+          p += basket[q].price;
+        }
+        return p;
+      }
+    };
+  })();
+
+  basketModule.addItem({
+    item: "soda",
+    price: 3.50
+  });
+
+  basketModule.addItem({
+    item: "eggs",
+    price: 2.25
+  });
+  out(basketModule.getTotal());
+
+  // IMPORT MIXINS
+  
+  // Global module importing jQuery and Underscore
+  var myModule = (function(jQ, _) {
+    function privateMethod() {
+      jQ(".container").html("test");
+    }
+
+    return {
+      publicMethod: function() {
+        privateMethod();
+      }
+    };
+  })(jQuery, _);
+
+  // EXPORTS
+
+  // Global module
+  var myModule = (function() {
+    var module = {};
+    var privateVariable = "Hello";
+
+    function privateMethod() {
+
+    }
+
+    module.publicProperty = "Foo";
+    module.publicMethod = function() {
+      out(privateVariable);
+    };
+
+    return module;
+  })();
+
+  // SKIPPED: Module pattern with Dojo, ExtJS, YUI, and jQuery
+}
+
+// SECTION
+// REVEALING MODULE PATTERN
+// define all variables and functions in the private scope, then return
+// an anonymous object with pointers to parts desired to be made public
+
+function runRevealingModulePattern() {
+  var myRevealingModule = (function() {
+    var privateVar = "Ben Cherry";
+    var publicVar = "Hey there";
+
+    function privateFunction() {
+      out("name: " + privateVar);
+    }
+
+    function publicSetName(strName) {
+      privateVar = strName;
+    }
+
+    function publicGetName() {
+      privateFunction();
+    }
+
+    return {
+      setName: publicSetName,
+      greeting: publicVar,
+      getName: publicGetName
+    };
+  })();
+
+  myRevealingModule.setName("Jet Star");
+  myRevealingModule.getName();
+  out(myRevealingModule.greeting);
+}
+
+// SECTION
+// SINGLETON PATTERN
+// a shared resource namespace which isolate implementation code from the
+// global namespace
+function runSingletonPattern() {
+  var mySingleton = (function() {
+    var instance;
+
+    function init() {
+      function privateMethod() {
+        out("private method called");
+      }
+
+      var privateVariable = "A private variable";
+
+      var privateRandomNumber = Math.random();
+
+      return {
+        publicMethod: function() {
+          out("Public can see me");
+        },
+        publicProperty: "Also public",
+        getRandomNumber: function() {
+          return privateRandomNumber;
+        }
+      };
+    }
+
+    return {
+      getInstance: function() {
+        if (!instance) {
+          instance = init();
+        }
+        return instance;
+      }
+    };
+  })();
+
+  var singleA = mySingleton.getInstance();
+  var singleB = mySingleton.getInstance();
+  out(singleA.getRandomNumber());
+  out(singleB.getRandomNumber());
+
+  var SingletonTester = (function() {
+    function Singleton(options) {
+      options = options || {};
+      this.name = "Singleton Tester";
+      this.pointX = options.pointX || 6;
+      this.pointY = options.pointY || 10;
+    }
+
+    var instance;
+    var _static = {
+      name: "Singleton Tester _static",
+      getInstance: function(options) {
+        if (instance === undefined) {
+          instance = new Singleton(options);
+        }
+        return instance;
+      }
+    };
+    return _static;
+  })();
+
+  var singletonTest = SingletonTester.getInstance({
+    pointX: 5
+  });
+
+  out(singletonTest.pointX);
+}
+
+// SECTION
+// OBSERVER PATTERN
+// the subject (an object) maintains a list of objects (observers) that
+// depend on it, and automatically notifies them of changes of state
+
+function runObserverPattern() {
+  function ObserverList() {
+    this.observerList = [];
+  }
+
+  ObserverList.prototype.add = function(obj) {
+    return this.observerList.push(obj);
+  };
+
+  ObserverList.prototype.count = function() {
+    return this.ObserverList.length;
+  };
+
+  ObserverList.prototype.get = function(index) {
+    if (index > -1 && index < this.observerList.length) {
+      return this.observerList[index];
+    }
+  };
+
+  ObserverList.prototype.indexOf = function(obj, startIndex) {
+    var i = startIndex;
+
+    while (i < this.observerList.length) {
+      if (this.observerList[i] === obj){
+        return i;
+      }
+      i++;
+    }
+    return -1;
+  };
+
+  ObserverList.prototype.removeAt = function(index) {
+    this.observerList.splice(index, 1);
+  };
+
+  
+}
+
+// RUN INDIVIDUAL PATTERNS
+// runConstructorPattern();
+// runModulePattern();
+// runRevealingModulePattern();
+// runSingletonPattern();
+runObserverPattern();
+
+
+</script>
+  </body>
+  </html>
