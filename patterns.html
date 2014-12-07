@@ -614,6 +614,137 @@ function runPrototypePattern() {
   out(beget(vehicle));
 }
 
+function runCommandPattern() {
+  var carManager = {
+    requestInfo: function(model) {
+      return "the info for " + model;
+    },
+    buyVehicle: function(model) {
+      return "purchased " + model;
+    },
+    arrangeViewing: function(model) {
+      return "booked viewing of " + model;
+    },
+  };
+
+  carManager.execute = function(name) {
+    return carManager[name] && carManager[name].apply(carManager, [].slice.call(arguments, 1));
+  };
+
+  out(carManager.execute("requestInfo", "Mondeo"));
+}
+
+function runFacadePattern() {
+  var module = (function() {
+    var _private = {
+      i: 5,
+      get: function() {
+        out("current value: " + this.i);
+      },
+      set: function(val) {
+        this.i = val;
+      },
+      run: function() {
+        out("running");
+      },
+    };
+
+    return {
+      facade: function(args) {
+        _private.set(args.val);
+        _private.get();
+        if (args.run) {
+          _private.run();
+        }
+      }
+    };
+  }());
+
+  module.facade({run: true, val: 10});
+}
+
+function runFactoryPattern() {
+  function Car(options) {
+    this.doors = options.doors || 4;
+    this.state = options.state || "brand new";
+    this.color = options.color || "silver";
+  }
+  Car.prototype.drive = "up to 100 mph";
+  Car.prototype.breakDown = "call for help";
+
+  function Truck(options) {
+    this.state = options.state || "used";
+    this.wheelSize = options.wheelSize || "large";
+    this.color = options.color || "blue";
+  }
+
+  // skeleton factory
+  function VehicleFactory() {}
+  
+  VehicleFactory.prototype.vehicleClass = Car;
+  VehicleFactory.prototype.createVehicle = function(options) {
+    switch(options.vehicleType) {
+    case "car":
+      this.vehicleClass = Car;
+      break;
+    case "truck":
+      this.vehicleClass = Truck;
+      break;
+    }
+    return new this.vehicleClass(options);
+  };
+
+  var carFactory = new VehicleFactory();
+  var car = carFactory.createVehicle({
+    vehicleType: "car",
+    color: "yellow",
+    doors: 6});
+
+  out(car);
+
+  // subclass VehicleFactory to create TruckFactory
+  function TruckFactory() {}
+  TruckFactory.prototype = new VehicleFactory();
+  TruckFactory.prototype.vehicleClass = Truck;
+
+  var truckFactory = new TruckFactory();
+  var myBigTruck = truckFactory.createVehicle({
+    state: "so bad",
+    color: "pink",
+    wheelSize: "so big"});
+
+  out(myBigTruck instanceof Truck);
+
+  var abstractVehicleFactory = (function() {
+    var types = {};
+
+    return {
+      getVehicle: function(type, customizations) {
+        var Vehicle = types[type];
+        return (Vehicle ? new Vehicle(customizations) : null);
+      },
+
+      registerVehicle: function(type, Vehicle) {
+        var proto = Vehicle.prototype;
+        if (proto.drive && proto.breakDown) {
+          types[type] = Vehicle;
+        }
+        return abstractVehicleFactory;
+      }
+    };
+  })();
+
+  abstractVehicleFactory.registerVehicle("car", Car);
+  abstractVehicleFactory.registerVehicle("truck", Truck);
+
+  var car = abstractVehicleFactory.getVehicle("car", {
+    color: "green",
+    state: "like new"});
+
+  out(car);
+}
+
+
 // RUN INDIVIDUAL PATTERNS
 // runConstructorPattern();
 // runModulePattern();
@@ -622,7 +753,9 @@ function runPrototypePattern() {
 // runObserverPattern();
 // runMediatorPattern();
 // runPrototypePattern();
-
+// runCommandPattern();
+// runFacadePattern();
+runFactoryPattern();
 
 </script>
   </body>
