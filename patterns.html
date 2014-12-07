@@ -5,6 +5,8 @@
   <title>My JS Design Patterns</title>
   </head>
   <body>
+  <script src="js/jquery.min.js"></script>
+  <script src="js/lodash.min.js"></script>
   <script>
 
 function out() {
@@ -744,6 +746,324 @@ function runFactoryPattern() {
   out(car);
 }
 
+// SECTION
+// MIXIN PATTERN
+function runMixinPattern() {
+  var Person = function(firstName, lastName) {
+    this.firstName = firstName;
+    this.lastName = lastName;
+    this.gender = "male";
+  };
+
+  var clark = new Person("Clark", "Kent");
+
+  // INHERITANCE
+  var Superhero = function(firstName, lastName, powers) {
+    Person.call(this, firstName, lastName);
+    this.powers = powers;
+  };
+
+  Superhero.prototype = Object.create(Person.prototype);
+  var superman = new Superhero("Clark", "Kent", ["flight", "heat vision"]);
+  out(superman);
+
+  // SUBSECTION
+  // MIXINS
+
+  var myMixins = {
+    moveUp: function() {
+      out("move up");
+    },
+    moveDown: function() {
+      out("move down");
+    },
+    stop: function() {
+      out("Stop!");
+    }
+  };
+
+  function CarAnimator() {
+    this.moveLeft = function() {
+      out("move left (animator)");
+    };
+  }
+
+  _.extend(CarAnimator.prototype, myMixins);
+
+  var myAnimator = new CarAnimator();
+  myAnimator.moveLeft();
+  myAnimator.moveDown();
+
+  var Car = function(settings) {
+    this.model = settings.model || "No model";
+    this.color = settings.color || "No color";
+  };
+
+  function augment(receivingClass, givingClass) {
+    if (arguments[2]) {
+      for (var i = 2, len = arguments.length; i < len; i++) {
+        receivingClass.prototype[arguments[i]] = givingClass.prototype[arguments[i]]; 
+      }
+    } else {
+      for (var methodName in givingClass.prototype) {
+        if (!Object.hasOwnProperty.call(receivingClass.prototype, methodName)) {
+          receivingClass.prototype[methodName] = givingClass.prototype[methodName];
+        }
+      }
+    }
+  }
+
+  var Mixin = function () {};
+
+  Mixin.prototype = {
+    driveSideways: function() {
+      out("Like a crab");
+    }
+  };
+  
+  augment(Car, Mixin, "driveSideways");
+
+  var myCar = new Car({
+    model: "Ford Escort",
+    color: "purple"
+  });
+
+  myCar.driveSideways(); 
+}
+
+// SECTION
+// DECORATOR PATTERN
+function runDecoratorPattern() {
+  function Vehicle(vehicleType) {
+    this.vehicleType = vehicleType || "car";
+    this.model = "default";
+    this.license = "00000-000";
+  }
+
+  var testInstance = new Vehicle("car");
+  out(testInstance);
+
+  var truck = new Vehicle("truck");
+  truck.setModel = function(modelName) {
+    this.model = modelName;
+  };
+
+  truck.setColor = function(color) {
+    this.color = color;
+  };
+
+  truck.setModel("CAT");
+  truck.setColor("blue");
+
+  out(truck);
+
+  var secondInstance = new Vehicle("car");
+  out(secondInstance);
+
+  function MacBook() {
+    this.cost = function() { return 997; };
+    this.screenSize = function() { return 11.6; };
+  }
+
+  function memory(macbook) {
+    var v = macbook.cost();
+    macbook.cost = function() {
+      return v + 75;
+    };
+  }
+
+  function engraving(macbook) {
+    var v = macbook.cost();
+    macbook.cost = function() {
+      return v + 200;
+    };
+  }
+
+  var mb = new MacBook();
+  memory(mb);
+  engraving(mb);
+
+  out(mb.cost());
+
+  
+  // http://jsbin.com/UMEJaXu/1/edit?js,output
+  function extend(a, b) {
+    for (var key in b) {
+      if (b.hasOwnProperty(key)) {
+        a[key] = b[key];
+      }
+      return a;
+    }
+  }
+
+  var MyInterface = function(name, methods) {
+    if (arguments.length != 2) {
+      throw new Error("myInterface expects 2 arguments");
+    }
+    this.name = name;
+    this.methods = [];
+    for (var i = 0, len = methods.length; i < len; i++) {
+      if (typeof methods[i] !== 'string') {
+        throw new Error("myinterface expects methods passed as strings");
+      }
+      this.methods.push(methods[i]);
+    }
+  };
+
+  MyInterface.ensureImplements = function(object) {
+    if (arguments.length < 2) {
+      throw new Error("ensureImplements expected 2 arguments");
+    }
+    for (var i = 1, len = arguments.length; i < len; i++) {
+      var theInterface = arguments[i];
+      if (theInterface.constructor !== MyInterface) {
+        throw new Errorr("expected instance of myInterface");
+      }
+      for (var j = 0, methodsLen = theInterface.methods.length; j < methodsLen; j++) {
+        var method = theInterface.methods[j];
+        if (!object[method] || typeof object[method] !== 'function') {
+          throw new Error("function does not implement interface");
+        }
+      }
+    }
+  };
+  
+
+  var reminder = new MyInterface("List", ['summary', 'placeOrder']);
+  var properties = {
+    name: "remember milk",
+    date: "5/6/16",
+    actions: {
+      summary: function() {
+        return "almost out of milk";
+      },
+      placeOrder: function() {
+        return "ordering milk";
+      }
+    }
+  };
+
+  var reminder = new MyInterface("List", ["summary", "placeOrder"]);
+                                 
+  function Todo(config) {
+    MyInterface.ensureImplements(config.actions, reminder);
+
+    this.name = config.name;
+    this.methods = config.actions;
+  }
+
+  var todoItem = new Todo(properties);
+  out(todoItem.methods.summary());
+
+  var Macbook = new MyInterface("Macbook",
+                                ["addEngraving",
+                                 "addRam",
+                                 "addCase"]);
+
+  var MacbookPro = function() {
+
+  };
+
+  MacbookPro.prototype = {
+    addEngraving: function() {
+    },
+    addRam: function() {
+    },
+    addCase: function() {
+    },
+    getPrice: function() {
+      return 900;
+    }
+  };
+
+  // abstract decorator class
+  var MacbookDecorator = function(macbook) {
+    MyInterface.ensureImplements(macbook, Macbook);
+    this.macbook = macbook;
+  };
+
+  MacbookDecorator.prototype = {
+    addEngraving: function() {
+      return this.macbook.addEngraving();
+    },
+    addRam: function() {
+      return this.macbook.addRam();
+    },
+    addCase: function() {
+      return this.macbook.addCase();
+    },
+    getPrice: function() {
+      return this.macbook.getPrice();
+    }
+  };
+
+  var CaseDecorator = function(macbook) {
+    this.macbook = macbook;
+  };
+
+  extend(CaseDecorator, MacbookDecorator);
+
+  CaseDecorator.prototype.addCase = function() {
+    return this.macbook.addCase() + "adding case";
+  };
+
+  CaseDecorator.prototype.getPrice = function() {
+    return this.macbook.getPrice() + 45;
+  };
+
+  var myMacbookPro = new MacbookPro();
+
+  out(myMacbookPro.getPrice());
+
+  var decoratedMacbook = new CaseDecorator(myMacbookPro);
+  out(decoratedMacbook.getPrice());
+
+  // SUBSECTION
+  // DECORATORS WITH JQUERY
+  var decoratorApp = decoratorApp || {};
+
+  decoratorApp = {
+    defaults: {
+      validate: false,
+      limit: 5,
+      name: "foo",
+      welcome: function() {
+        out("Welcome");
+      }
+    },
+    options: {
+      validate: true,
+      name: "bar",
+      helloWorld: function() {
+        out("hello world");
+      }
+    },
+
+    settings: {},
+
+    printObj: function(obj) {
+      var arr = [];
+      var next;
+
+      $.each(obj, function(key, val) {
+        next = key + ": ";
+        next += $.isPlainObject(val) ? printObj(val) : val;
+        arr.push(next);
+      });
+
+      return "{ " + arr.join(", ") + " }";
+    }
+  };
+
+  decoratorApp.settings = $.extend({}, decoratorApp.defaults, decoratorApp.options);
+  out(decoratorApp.printObj(decoratorApp.settings));
+  out(decoratorApp.printObj(decoratorApp.options))
+  out(decoratorApp.printObj(decoratorApp.defaults));
+}
+
+function runFlyweightPattern() {
+
+}
 
 // RUN INDIVIDUAL PATTERNS
 // runConstructorPattern();
@@ -755,7 +1075,10 @@ function runFactoryPattern() {
 // runPrototypePattern();
 // runCommandPattern();
 // runFacadePattern();
-runFactoryPattern();
+// runFactoryPattern();
+// runMixinPattern();
+// runDecoratorPattern();
+runFlyweightPattern();
 
 </script>
   </body>
