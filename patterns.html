@@ -1062,10 +1062,213 @@ function runDecoratorPattern() {
 }
 
 function runFlyweightPattern() {
+  // simulate pure virtual inheritance (implement)
+  Function.prototype.implementsFor = function(parentClassOrObject) {
+    if (parentClassOrObject.constructor === Function) {
+      // normal inheritance
+      this.prototype = new parentClassOrObject();
+      this.prototype.constructor = this;
+      this.prototype.parent = parentClassOrObject.prototype;
+    } else {
+      // pure virtual inheritance
+      this.prototype = parentClassOrObject;
+      this.prototype.constructor = this;
+      this.prototype.parent = parentClassOrObject;
+    }
+    return this;
+  };
 
+  // CoffeeOrder: Flyweight
+  // CoffeeFlavor: Concrete Flyweight
+  // CoffeeOrderContext: Helper
+  // CoffeeFlavorFactory: Flyweight Factory
+  // testFlyweight: use our flyweights
+
+  // Flyweight object
+  var CoffeeOrder = {
+    serveCoffee: function(context) {},
+    getFlavor: function() {}
+  };
+
+  // ConcreteFlyweight object
+  function CoffeeFlavor(newFlavor) {
+    var flavor = newFlavor;
+    if (typeof this.getFlavor === "function") {
+      this.getFlavor = function() {
+        return flavor;
+      };
+    }
+
+    if (typeof this.serveCoffee === "function") {
+      this.serveCoffee = function(context) {
+        out("serving flavor " + flavor + " to table number " + context.getTable());
+      };
+    }
+  }
+
+  CoffeeFlavor.implementsFor(CoffeeOrder);
+
+  function CoffeeOrderContext(tableNumber) {
+    return {
+      getTable: function() {
+        return tableNumber;
+      }
+    };
+  }
+
+  function CoffeeFlavorFactory() {
+    var flavors = {};
+    var length = 0;
+
+    return {
+      getCoffeeFlavor: function(flavorName) {
+        var flavor = flavors[flavorName];
+        if (typeof flavor === "undefined") {
+          flavor = new CoffeeFlavor(flavorName);
+          flavors[flavorName] = flavor;
+          length++;
+        }
+        return flavor;
+      },
+      getTotalCoffeeFlavorsMade: function() {
+        return length;
+      }
+    };
+  }
+
+  function testFlyweight() {
+    var flavors = new CoffeeFlavor();
+    var tables = new CoffeeOrderContext();
+    var ordersMade = 0;
+    var flavorFactory;
+
+    function takeOrders(flavorIn, table) {
+      flavors[ordersMade] = flavorFactory.getCoffeeFlavor(flavorIn);
+      tables[ordersMade++] = new CoffeeOrderContext(table);
+    }
+
+    flavorFactory = new CoffeeFlavorFactory();
+
+    takeOrders("Cappuccino", 2);
+    takeOrders("Frappe", 1);
+    takeOrders("Espresso", 1);
+    takeOrders("Mocha", 3);
+    takeOrders("Americano", 1);
+    
+    for (var i = 0; i < ordersMade; ++i) {
+      flavors[i].serveCoffee(tables[i]);
+    }
+
+    out("total CoffeeFlavor objects made: " + flavorFactory.getTotalCoffeeFlavorsMade());
+  }
+
+  //  testFlyweight();
+
+  // book management without Flyweight
+  var Book = function(id, title, author, checkoutDate, checkoutMember, dueReturnDate, availability) {
+    this.id = id;
+    this.title = title;
+    this.author = author;
+    this.checkoutDate = checkoutDate;
+    this.checkoutMember = checkoutMember;
+    this.dueReturnDate = dueReturnDate;
+    this.availability = availability;
+  };
+
+  Book.prototype = {
+    getID: function() {
+      return this.id;
+    },
+    getTitle: function() {
+      return this.title;
+    },
+    updateCheckoutStatus: function(bookID, newStatus, checkoutDate, checkoutMember, newReturnDate) {
+      this.id = bookID;
+      this.availability = newStatus;
+      this.checkoutDate = checkoutDate;
+      this.checkoutMember = checkoutMember;
+      this.dueReturnDate = newReturnDate;
+    },
+  };
+
+  // Flyweight optimized
+  var Book = function(title, author, ISBN) {
+    this.title = title;
+    this.author = author;
+    this.ISBN = ISBN;
+  };
+
+  var BookFactory = (function() {
+    var existingBooks = {};
+    var existingBook;
+
+    return {
+      createBook: function(title, author, ISBN) {
+        existingBook = existingBooks[ISBN];
+        if (!!existingBook) {
+          return existingBook;
+        } else {
+          var book = new Book(title, author, ISBN);
+          existingBooks[ISBN] = book;
+          return book;
+        }
+      }
+    };
+  })();
+
+  var BookRecordManager = (function() {
+    var bookRecordDatabase = {};
+
+    return {
+      addBookRecord: function(id, title, author, ISBN, checkoutDate, checkoutMember, dueReturnDate, availability) {
+        var book = BookFactory.createBook(title, author, ISBN);
+        bookRecordDatabase[id] = {
+          checkoutMember: checkoutMember,
+          checkoutDate: checkoutDate,
+          dueReturnDate: dueReturnDate,
+          availability: availability,
+          book: book
+        };
+      },
+      updateCheckoutStatus: function(bookID, newStatus, checkoutDate, checkoutMember, newReturnDate) {
+        var record = bookRecordDatabase[bookID];
+        record.availability = newStatus;
+        record.checkoutDate = checkoutDate;
+        record.checkoutMember = checkoutMember;
+        record.dueReturnDate = newReturnDate;
+      },
+      extendCheckoutPeriod: function(bookID, newReturnDate) {
+        bookRecordDatabase[bookID].dueReturnDate = newReturnDate;
+      },
+      getDatabase: function() {
+        return bookRecordDatabase;
+      }
+    };
+  })();
+
+  BookRecordManager.addBookRecord(1, 'The Hobbit', 'J. R. R. Tolkien', '19381-330', 'today', 100, 'next wed', 'not available');
+  BookRecordManager.extendCheckoutPeriod(1, 'next month');
+  out(BookRecordManager.getDatabase());
+
+  // single jQuery object is technically a Flyweight
+  jQuery.single = (function(o) {
+    var collection = jQuery([1]);
+    return function(element) {
+      collection[0] = element;
+      return collection;
+    };
+  })();
+
+  $("div").on("click", function() {
+    var html = jQuery.single(this).next().html();
+    console.log(html);
+  });
 }
 
+
+
 // RUN INDIVIDUAL PATTERNS
+// BOOK ORDER
 // runConstructorPattern();
 // runModulePattern();
 // runRevealingModulePattern();
@@ -1078,7 +1281,22 @@ function runFlyweightPattern() {
 // runFactoryPattern();
 // runMixinPattern();
 // runDecoratorPattern();
-runFlyweightPattern();
+// runFlyweightPattern();
+
+// ALPHABETICAL ORDER
+// runCommandPattern();
+// runConstructorPattern();
+// runDecoratorPattern();
+// runFacadePattern();
+// runFactoryPattern();
+// runFlyweightPattern();
+// runModulePattern();
+// runMediatorPattern();
+// runMixinPattern();
+// runObserverPattern();
+// runPrototypePattern();
+// runRevealingModulePattern();
+// runSingletonPattern();
 
 </script>
   </body>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+  <head>
+	<meta charset="utf-8">
+	<title>JS Design</title>
+	<script src="js/jquery.min.js"></script>
+	<script src="js/lodash.min.js"></script>
+  </head>
+  <body>
+	<div id="container">
+	  <div class="toggle" href="#">More info (address)
+		<span class="info">
+		  this is more info
+		</span>
+	  </div>
+	  <div class="toggle" href="#">Map
+		<span class="info">
+		  the map
+		</span>
+	  </div>
+	</div>
+	
+	<script>
+  var stateManager = {
+	fly: function() {
+      var self = this;
+      $("#container")
+        .unbind()
+        .on('click', 'div.toggle', function(e) {
+          self.handleClick(e.target);
+        });
+    },
+
+    handleClick: function(elem) {
+      elem.find("span").toggle("slow");
+    }
+  };
+
+// Doesn't work
+stateManager.fly();
+	</script>
+  </body>
+</html>
